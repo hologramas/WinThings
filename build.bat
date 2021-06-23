@@ -28,5 +28,10 @@ echo Building hwnd.
 cl ..\hwnd.cc /Fehwnd.exe /Fdhwnd.pdb /DDBUG /Zi /link /SUBSYSTEM:console -opt:ref user32.lib
 IF "%errorlevel%" NEQ "0" goto :exit
 
+echo ====
+echo Building printsvcs.
+cl ..\printsvcs.cc /Feprintsvcs.exe /Fdprintsvcs.pdb /DDBUG /Zi /link /SUBSYSTEM:console -opt:ref Advapi32.lib
+IF "%errorlevel%" NEQ "0" goto :exit
+
 :exit
 popd
