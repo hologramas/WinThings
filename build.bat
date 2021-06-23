@@ -1,5 +1,10 @@
 @echo off
 
+REM 
+REM  Run this batch file from a visual studio command line tools console.
+REM  CL.EXE is expected to be in the PATH.
+REM
+
 IF NOT EXIST bin mkdir bin
 pushd bin
 
