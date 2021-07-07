@@ -16,8 +16,9 @@ int main(int argc, char* argv[]) {
                                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                 nullptr, OPEN_EXISTING, 0, nullptr);
   if (volume == INVALID_HANDLE_VALUE) {
-    fprintf(stderr, "CreateFile failed. Error: %u\n", ::GetLastError());
-    return -1;
+    const DWORD error = ::GetLastError();
+    fprintf(stderr, "CreateFile failed. Error: %u\n", error);
+    return error;
   }
 
   STORAGE_PROPERTY_QUERY query{};
