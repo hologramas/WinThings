@@ -28,13 +28,13 @@ int main(int argc, char* argv[]) {
       continue;
     }
 
-    if (!::EmptyWorkingSet(process)) {
+    if (::EmptyWorkingSet(process)) {
+      fprintf(stdout, "Emptied working set for process %i\n", pid);
+    } else {
       fprintf(stderr, "Cannot empty working set for process %i, error: %u\n",
                       pid, ::GetLastError());
-      continue;
     }
 
-    fprintf(stdout, "Emptied working set for process %i\n", pid);
     ::CloseHandle(process);
   }
 
