@@ -15,6 +15,7 @@ constexpr char* state_names[] = {
 
 constexpr DWORD still_print_cadence = (30 * 1000);
 
+static
 DWORD GetAvailablePhysicalMemMB() {
   MEMORYSTATUSEX mem_info;
   mem_info.dwLength = sizeof(mem_info);

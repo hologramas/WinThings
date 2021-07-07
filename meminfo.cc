@@ -10,6 +10,7 @@
 #define ONE_GB (1024UL * ONE_MB)
 #define ONE_TB (1024ULL * ONE_GB)
 
+static
 void PrintMemSize(const char* label, size_t value) {
   if (value >= ONE_TB)
     printf("%s %.2f TB\n", label, value / (float)ONE_TB);
