@@ -97,12 +97,15 @@ void PrintMemStats() {
   }
 
   const size_t pagefile_used = mem_status.ullTotalPageFile - mem_status.ullAvailPageFile;
+  const size_t physical_used = mem_status.ullTotalPhys - mem_status.ullAvailPhys;
   const double pfp_ratio = (double)pagefile_used / mem_status.ullTotalPhys;
 
   printf("Memory status:\n");
   PrintMemSize("  Total physical       :", mem_status.ullTotalPhys);
+  PrintMemSize("  Used physical        :", physical_used);
   PrintMemSize("  Available physical   :", mem_status.ullAvailPhys);
   PrintMemSize("  Total page file      :", mem_status.ullTotalPageFile);
+  PrintMemSize("  Used page file       :", pagefile_used);
   PrintMemSize("  Available page file  :", mem_status.ullAvailPageFile);
   PrintMemSize("  Total virtual        :", mem_status.ullTotalVirtual);
   PrintMemSize("  Available virtual    :", mem_status.ullAvailVirtual);
