@@ -96,6 +96,9 @@ void PrintMemStats() {
     return;
   }
 
+  const size_t pagefile_used = mem_status.ullTotalPageFile - mem_status.ullAvailPageFile;
+  const double pfp_ratio = (double)pagefile_used / mem_status.ullTotalPhys;
+
   printf("Memory status:\n");
   PrintMemSize("  Total physical       :", mem_status.ullTotalPhys);
   PrintMemSize("  Available physical   :", mem_status.ullAvailPhys);
@@ -103,9 +106,9 @@ void PrintMemStats() {
   PrintMemSize("  Available page file  :", mem_status.ullAvailPageFile);
   PrintMemSize("  Total virtual        :", mem_status.ullTotalVirtual);
   PrintMemSize("  Available virtual    :", mem_status.ullAvailVirtual);
-  printf("  Physical Memory load : %u%%\n", mem_status.dwMemoryLoad);
-  printf("  Page file load       : %llu%%\n", 100 - ((mem_status.ullAvailPageFile * 100) /
-                                                      mem_status.ullTotalPageFile));
+  printf("  Physical Memory load       : %u%%\n", mem_status.dwMemoryLoad);
+  printf("  Page file load             : %llu%%\n", (pagefile_used * 100) / mem_status.ullTotalPageFile);
+  printf("  Page file load / physical  : %.2fx\n", pfp_ratio);
   puts("");
 }
 
