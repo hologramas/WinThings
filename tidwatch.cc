@@ -23,11 +23,23 @@ void PrintProcessThreads(DWORD pid) {
     return;
   }
 
+  int i = 0;
   do {
     if(thread_entry.th32OwnerProcessID == pid) {
-      fprintf(stdout, "Thread id %u, base priority: %u\n",
-                      thread_entry.th32ThreadID, thread_entry.tpBasePri);
+      LONG thread_prio_delta = 0;
+      //if (i == 0) {
+        HANDLE thread = ::OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, thread_entry.th32ThreadID);
+        if (thread) {
+          thread_prio_delta = ::GetThreadPriority(thread);
+        } else {
+          fprintf(stderr, "Failed to open thread id %u. Error: %u\n", thread_entry.th32ThreadID, ::GetLastError());
+        }
+      //}
+      fprintf(stdout, "Thread id %u, base priority: %u, delta priority: %u\n",
+                      thread_entry.th32ThreadID, thread_entry.tpBasePri, thread_prio_delta);
+      ++i;
     }
+
   } while(Thread32Next(snapshot, &thread_entry)); 
 
   ::CloseHandle(snapshot);
@@ -43,7 +55,7 @@ bool NeedsHelp(int argc, wchar_t* argv[]) {
 
 static
 void PrintHelp(const wchar_t* program_name) {
-  fprintf(stdout, "%ws <pid> : Watches for process priority changes.\n", program_name);
+  fprintf(stdout, "%ws <tid> : Watches thread priority changes.\n", program_name);
 }
 
 int wmain(int argc, wchar_t* argv[]) {
@@ -52,26 +64,18 @@ int wmain(int argc, wchar_t* argv[]) {
     return 0;
   }
 
-  const DWORD pid = _wtol(argv[1]);
-  HANDLE process = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, pid);
-  if (process == NULL) {
-    fprintf(stderr, "Cannot open process [pid: %u]. Error: %u\n", pid, ::GetLastError());
+  const DWORD tid = _wtol(argv[1]);
+  HANDLE thread = ::OpenThread(THREAD_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, tid);
+  if (!thread) {
+    fprintf(stderr, "Failed to open thread id %u. Error: %u\n", tid, ::GetLastError());
     return ::GetLastError();
   }
 
-  for (;;) {
-    if (::WaitForSingleObject(process, 1000) == WAIT_OBJECT_0) {
-      DWORD exit_code = 0;
-      ::GetExitCodeProcess(process, &exit_code);
-      fprintf(stdout, "The process [pid: %u] exited with code: %u\n", pid, exit_code);
-      break;
-    }
-
-    const DWORD priority_class = ::GetPriorityClass(process);
-    fprintf(stdout, "pid %u, priority class: %u\n", pid, priority_class);
-    PrintProcessThreads(pid);
+  while (::WaitForSingleObject(thread, 0) == WAIT_TIMEOUT) {
+    const LONG priority = ::GetThreadPriority(thread);
+    fprintf(stdout, "Thread id %u, priority: %u\n", tid, priority);
   }
 
-  ::CloseHandle(process);
+  ::CloseHandle(thread);
   return 0;
 }
