@@ -1,12 +1,11 @@
 //
-//
+//  MIT License
 //
 
 #include <windows.h>
 #include <stdio.h>
 #include <tlhelp32.h>
 #include <psapi.h>
-#include <vector>
 
 #define ONE_KB (1024)
 #define ONE_MB (1024UL * ONE_KB)
@@ -26,6 +25,12 @@ struct Filter {
   const wchar_t* image_path = nullptr;
   DWORD pid = 0;
   DWORD parent_pid = 0;
+};
+
+struct MemStats {
+  size_t private_workingset = 0;
+  size_t workingset = 0;
+  size_t commit = 0;
 };
 
 static
@@ -62,6 +67,28 @@ bool NameEndsWith(const wchar_t* name, const wchar_t* suffix) {
 }
 
 static
+void PrintGlobalRelativeUse(const MemStats& mem_stats) {
+  MEMORYSTATUSEX system_mem;
+  system_mem.dwLength = sizeof(system_mem);
+  if (!::GlobalMemoryStatusEx(&system_mem)) {
+    const DWORD error = ::GetLastError();
+    fprintf(stderr, "GlobalMemoryStatusEx failed. Error: %u\n", error);
+    return;
+  }
+
+  const size_t pagefile_used = system_mem.ullTotalPageFile - system_mem.ullAvailPageFile;
+  const size_t physical_used = system_mem.ullTotalPhys - system_mem.ullAvailPhys;
+  const double over_total_commit = (double)mem_stats.commit / system_mem.ullTotalPageFile;
+  const double over_used_commit = (double)mem_stats.commit / pagefile_used;
+  const double over_total_physical = (double)mem_stats.workingset / system_mem.ullAvailPhys;
+  const double over_used_physical = (double)mem_stats.workingset / physical_used;
+  fprintf(stdout, "%% of total commit   : %.2f%%\n", over_total_commit * 100);
+  fprintf(stdout, "%% of used commit    : %.2f%%\n", over_used_commit * 100);
+  fprintf(stdout, "%% of total physical : %.2f%%\n", over_total_physical * 100);
+  fprintf(stdout, "%% of used physical  : %.2f%%\n", over_used_physical * 100);
+}
+
+static
 void PrintProcessesMemInfo(const Filter& filter) {
   HANDLE snapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snapshot == INVALID_HANDLE_VALUE) {
@@ -78,8 +105,7 @@ void PrintProcessesMemInfo(const Filter& filter) {
   }
 
   size_t total_count = 0;
-  size_t total_workingset = 0;
-  size_t total_pagefile = 0;
+  MemStats total_mem{};
 
   puts("Matching processes:");
   do {
@@ -119,12 +145,11 @@ void PrintProcessesMemInfo(const Filter& filter) {
     printf("%S (pid %6u) (parent %6u): ", pe.szExeFile, pe.th32ProcessID, pe.th32ParentProcessID);
     PROCESS_MEMORY_COUNTERS_EX pmc;
     if (::GetProcessMemoryInfo(process, reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc), sizeof(pmc))) {
-      total_workingset += pmc.WorkingSetSize;
-      total_pagefile += pmc.PrivateUsage;
+      total_mem.workingset += pmc.WorkingSetSize;
+      total_mem.commit += pmc.PrivateUsage;
 
       PrintMemSize("workingset: ", pmc.WorkingSetSize, false);
-      PrintMemSize(", commit: ", pmc.PrivateUsage, false);
-      puts("");
+      PrintMemSize(", commit: ", pmc.PrivateUsage, true);
     } else {
       fprintf(stderr, "Failed to get memory info. Error: %u\n", ::GetLastError());
     }
@@ -135,10 +160,11 @@ void PrintProcessesMemInfo(const Filter& filter) {
 
   ::CloseHandle(snapshot);
 
-  printf("\nSummary for matching processes\n");
-  printf("Count : %llu\n", total_count);
-  PrintMemSize("Sum of workingset : ", total_workingset, true);
-  PrintMemSize("Sum of commit     : ", total_pagefile, true);
+  fprintf(stdout, "\nSummary for matching processes\n");
+  fprintf(stdout, "Count : %llu\n", total_count);
+  PrintMemSize("Sum of workingset   : ", total_mem.workingset, true);
+  PrintMemSize("Sum of commit       : ", total_mem.commit, true);
+  PrintGlobalRelativeUse(total_mem);
 }
 
 static
@@ -173,11 +199,11 @@ bool NeedsHelp(const wchar_t* first_arg) {
 
 static
 void PrintHelp(const wchar_t* program_name) {
-  printf("Prints memory information for processes that match.\n");
-  printf("%ws --name <process name> : %ws --name bar.exe\n", program_name, program_name);
-  printf("%ws --path <full path>    : %ws --path c:\\foo\\bar.exe\n", program_name, program_name);
-  printf("%ws --pid <process pid>   : %ws --pid 1234\n", program_name, program_name);
-  printf("%ws --parent <parent pid> : %ws --parent 1234\n", program_name, program_name);
+  fprintf(stdout, "Prints memory information for processes that match.\n");
+  fprintf(stdout, "%ws --name <process name> : %ws --name bar.exe\n", program_name, program_name);
+  fprintf(stdout, "%ws --path <full path>    : %ws --path c:\\foo\\bar.exe\n", program_name, program_name);
+  fprintf(stdout, "%ws --pid <process pid>   : %ws --pid 1234\n", program_name, program_name);
+  fprintf(stdout, "%ws --parent <parent pid> : %ws --parent 1234\n", program_name, program_name);
 }
 
 int wmain(int argc, wchar_t* argv[]) {

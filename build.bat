@@ -38,5 +38,10 @@ echo Building printsvcs.
 cl ..\printsvcs.cc /Feprintsvcs.exe /Fdprintsvcs.pdb /DDBUG /Zi /link /SUBSYSTEM:console -opt:ref Advapi32.lib
 IF "%errorlevel%" NEQ "0" goto :exit
 
+echo ====
+echo Building printsvcs.
+cl ..\memfor.cc /Fememfor.exe /Fdmemfor.pdb /DDBUG /Zi /link /SUBSYSTEM:console -opt:ref Advapi32.lib
+IF "%errorlevel%" NEQ "0" goto :exit
+
 :exit
 popd
