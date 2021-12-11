@@ -80,7 +80,7 @@ void PrintGlobalRelativeUse(const MemStats& mem_stats) {
   const size_t physical_used = system_mem.ullTotalPhys - system_mem.ullAvailPhys;
   const double over_total_commit = (double)mem_stats.commit / system_mem.ullTotalPageFile;
   const double over_used_commit = (double)mem_stats.commit / pagefile_used;
-  const double over_total_physical = (double)mem_stats.workingset / system_mem.ullAvailPhys;
+  const double over_total_physical = (double)mem_stats.workingset / system_mem.ullTotalPhys;
   const double over_used_physical = (double)mem_stats.workingset / physical_used;
   fprintf(stdout, "%% of total commit   : %.2f%%\n", over_total_commit * 100);
   fprintf(stdout, "%% of used commit    : %.2f%%\n", over_used_commit * 100);
