@@ -35,6 +35,7 @@ constexpr wchar_t c_edge_stable[] = L"C:\\Program Files (x86)\\Microsoft\\Edge\\
 
 int wmain(int argc, wchar_t* argv[]) {
   std::wstring cmdline(c_edge_stable);
+  cmdline = cmdline.append(L" ");
   cmdline = cmdline.append(argv[1]);
   std::wstring commandline = NormalizeCommandLine(cmdline);
   std::hash<std::wstring> StringHash;
