@@ -21,7 +21,24 @@ bool RegOOBECompleteSystemTime(const char* stat_name, SYSTEMTIME *systemtime) {
 }
 
 static
-void LogOOBEInfo(FILE* log) {
+bool RegOOBEIsSkipMachineSet(const char* stat_name, bool* is_set) {
+  *is_set = false;
+  constexpr const char oobe_key[] = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\OOBE";
+  DWORD type = REG_DWORD;
+  DWORD value = 0;
+  DWORD size = sizeof(value);
+  LSTATUS status = RegGetValueA(HKEY_LOCAL_MACHINE, oobe_key, stat_name, RRF_RT_DWORD, &type, &value, &size);
+  if (status != ERROR_SUCCESS) {
+    fprintf(stderr, "Failed to read oobe skip key for value [%s]. Error: %u\n", stat_name, status);
+    return false;
+  }
+
+  *is_set = (value != 0);
+  return true;
+}
+
+static
+void LogOOBECompleteInfo(FILE* log) {
   SYSTEMTIME time;
   if (RegOOBECompleteSystemTime("OOBECompleteTimestamp", &time)) {
     fprintf(stdout, "[%I64u][%u] OOBECompleteTimestamp : %02u/%02u/%04u [%02u:%02u:%02u.%03u]\n",
@@ -38,6 +55,24 @@ void LogOOBEInfo(FILE* log) {
       fprintf(log, "[%I64u][%u] OOBECompleteTimestamp : Not found\n", GetTickCount64(), GetCurrentProcessId());
   }
 }
+
+static
+void LogOOBESkipInfo(FILE* log) {
+  bool is_set = false;
+  if (RegOOBEIsSkipMachineSet("SkipMachineOOBE", &is_set)) {
+    fprintf(stdout, "[%I64u][%u] SkipMachineOOBE : %u\n",
+                    GetTickCount64(), GetCurrentProcessId(),
+                    is_set);
+    if (log) {
+      fprintf(log, "[%I64u][%u] SkipMachineOOBE : %u\n",
+                   GetTickCount64(), GetCurrentProcessId(),
+                   is_set);
+    }
+  } else if (log) {
+      fprintf(log, "[%I64u][%u] SkipMachineOOBE : Not found\n", GetTickCount64(), GetCurrentProcessId());
+  }
+}
+
 
 int main(int argc, char* argv[]) {
   FILE* log = fopen("c:\\test\\oobecomplete.txt", "a");
@@ -66,7 +101,8 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    LogOOBEInfo(log);
+    LogOOBECompleteInfo(log);
+    LogOOBESkipInfo(log);
     if (log) {
       fflush(log);
     }
