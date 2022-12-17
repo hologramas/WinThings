@@ -118,6 +118,7 @@ void PrintMemStats() {
 static
 void PrintMemEventsState() {
   constexpr wchar_t* memory_event_names[] = {
+    L"\\KernelObjects\\MaximumCommitCondition",
     L"\\KernelObjects\\HighCommitCondition",
     L"\\KernelObjects\\HighMemoryCondition",
     L"\\KernelObjects\\LowCommitCondition",
